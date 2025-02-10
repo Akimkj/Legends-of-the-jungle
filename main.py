@@ -26,6 +26,7 @@ sprite_chao = pygame.image.load(os.path.join(diretorio_sprites, "grass_main_128x
 sprite_player_parado = pygame.image.load(os.path.join(diretorio_sprites, "Idle.png")).convert_alpha()
 sprite_player_andando = pygame.image.load(os.path.join(diretorio_sprites, "Walk.png")).convert_alpha()
 sprite_player_jump = pygame.image.load(os.path.join(diretorio_sprites, "Jump.png")).convert_alpha()
+sprite_player_attack = pygame.image.load(os.path.join(diretorio_sprites, "Attack_3_1.png")).convert_alpha()
 
 #classes
 class Birds(pygame.sprite.Sprite):
@@ -71,7 +72,7 @@ class Chao(pygame.sprite.Sprite):
         Self.rect = Self.image.get_rect()
         Self.rect.y = altura_tela - 128
         Self.rect.x = pos_x * 128
-
+        Self.playerAndando = False
     '''def update(Self):
         if Self.rect.topright[0] < 0:
             Self.rect.x = largura_tela
@@ -93,6 +94,16 @@ class Player(pygame.sprite.Sprite):
         for i in range(12):
             img_jump = sprite_player_jump.subsurface((i * 128, 0), (128, 128)).convert_alpha()
             Self.sprite.append(img_jump)
+        # [26] até [37]
+        for i in range(4):
+            img_attack1 = sprite_player_attack.subsurface((i * 128, 0), (128, 128)).convert_alpha()
+            Self.sprite.append(img_attack1)
+        for i in range(3):
+            img_attack2 = sprite_player_attack.subsurface((i * 128, 128), (128, 128)).convert_alpha()
+            Self.sprite.append(img_attack2)
+        for i in range(5):
+            img_attack3 = sprite_player_attack.subsurface((i * 128, 256), (128, 128)).convert_alpha()
+            Self.sprite.append(img_attack3)
 
         Self.index_lista = 0
         Self.image = Self.sprite[Self.index_lista]
@@ -102,12 +113,27 @@ class Player(pygame.sprite.Sprite):
         Self.parado = True
         Self.andando = False
         Self.pulando= False
+        Self.atacando = False
 
     def andar(Self):
         Self.andando = True
         Self.parado = False
 
+    def atacar(Self):
+        Self.andando = False
+        Self.parado = False
+        Self.atacando = True
     def update(Self):
+        if Self.atacando == True:
+            if pygame.key.get_pressed()[K_f]:
+                if Self.index_lista > 37 or Self.index_lista < 26:
+                    Self.index_lista = 26
+                Self.index_lista += 0.18
+                Self.image = Self.sprite[int(Self.index_lista)] 
+            else:
+                Self.parado = True
+                Self.atacando = False
+                pass
         if Self.parado == True:
             if Self.index_lista > 5:
                 Self.index_lista = 0
@@ -135,8 +161,8 @@ class Player(pygame.sprite.Sprite):
                 Self.parado = True
                 Self.andando = False
                 pass
-            
-            
+
+
 #funções para o jogo
 def sair_menu():
     global menu, musica_game
@@ -203,11 +229,15 @@ while rodando:
             rodando = False
             pygame.quit()
             exit()
+        if event.type == KEYDOWN:
+            if event.key == K_f:
+                jogador.atacar()
 
     if pygame.key.get_pressed()[K_a]:
         jogador.andar()
     if pygame.key.get_pressed()[K_d]:
         jogador.andar()
+    
     todas_as_sprites.draw(tela)
     todas_as_sprites.update()
 
