@@ -134,6 +134,7 @@ class Player(pygame.sprite.Sprite):
                 Self.parado = True
                 Self.atacando = False
                 pass
+        
         if Self.parado == True:
             if Self.index_lista > 5:
                 Self.index_lista = 0
