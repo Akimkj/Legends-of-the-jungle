@@ -1,6 +1,6 @@
 import pygame
 from pygame.locals import *
-import sys
+from sys import exit
 import os
 from random import randrange
 pygame.init()
@@ -27,6 +27,10 @@ sprite_player_parado = pygame.image.load(os.path.join(diretorio_sprites, "Idle.p
 sprite_player_andando = pygame.image.load(os.path.join(diretorio_sprites, "Walk.png")).convert_alpha()
 sprite_player_jump = pygame.image.load(os.path.join(diretorio_sprites, "Jump.png")).convert_alpha()
 sprite_player_attack = pygame.image.load(os.path.join(diretorio_sprites, "Attack_3_1.png")).convert_alpha()
+sprite_medusa_andando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Walk.png")).convert_alpha()
+sprite_medusa_atacando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Attack_1.png")).convert_alpha()
+
+
 
 #classes
 class Birds(pygame.sprite.Sprite):
@@ -42,17 +46,6 @@ class Birds(pygame.sprite.Sprite):
         Self.rect = Self.image.get_rect()
         Self.rect.x = largura_tela + randrange(20, 450, 50)
         Self.rect.y = randrange(50, 250, 50)
-
-    def update(Self):
-        Self.index_lista += 0.09
-        if Self.index_lista >= len(Self.sprite):
-            Self.index_lista = 0
-        Self.image = Self.sprite[int(Self.index_lista)]
-        Self.image = pygame.transform.scale(Self.image, (32  * 1.5, 32 * 1.5))
-        if Self.rect.topright[0] < 0: 
-            Self.rect.x = largura_tela + randrange(20, 450, 50)
-            Self.rect.y = randrange(50, 250, 30) 
-        Self.rect.x -= 4 
 
     def update(Self):
         Self.index_lista += 0.09
@@ -129,10 +122,13 @@ class Player(pygame.sprite.Sprite):
         Self.parado = False
         Self.atacando = True
 
-    def pular(self):
-        if not self.pulando:
-           self.pulando = True
-           self.vel_y = -10
+    def pular(Self):
+        Self.parado = False
+        Self.atacando = False
+        Self.andando = False
+        if not Self.pulando:
+           Self.pulando = True
+           Self.vel_y = -10
 
 
     def update(Self):
@@ -160,7 +156,7 @@ class Player(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             if pygame.key.get_pressed()[K_a]:
                 if Self.rect.center[0] > 12:
-                    Self.rect.x -= 2.5
+                    Self.rect.x -= 3
             else:
                 Self.parado = True
                 Self.andando = False
@@ -175,9 +171,9 @@ class Player(pygame.sprite.Sprite):
                 Self.andando = False
                 pass
         if Self.pulando:
+            Self.index_lista += 0.25
             if Self.index_lista > 25 or Self.index_lista < 14:
                 Self.index_lista = 14
-            Self.index_lista += 0.25
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.vel_y += Self.gravidade  # Aplica gravidade
             Self.rect.y += Self.vel_y  # Atualiza a posição vertical
@@ -189,6 +185,36 @@ class Player(pygame.sprite.Sprite):
                 Self.vel_y = 0
                 Self.parado = True
 
+class Monstros(pygame.sprite.Sprite): 
+    def __init__(Self):
+        super().__init__()
+        Self.sprite_medusa = []
+        #[0] até [12]
+        for i in range(13):
+            img_walk = sprite_medusa_andando.subsurface((i * 128, 0),(128, 128)).convert_alpha()
+            Self.sprite_medusa.append(img_walk)
+        #[13] até [28]
+        for i in range(16):
+            img_attack = sprite_medusa_atacando.subsurface((i * 128, 0), (128, 128)).convert_alpha()
+            Self.sprite_medusa.append(img_attack)
+        
+        Self.index_lista = 0
+        Self.image = Self.sprite_medusa[Self.index_lista]
+        Self.rect = Self.image.get_rect()
+        Self.rect.x = largura_tela + randrange(100, 800, 200)
+        Self.rect.y = altura_tela - 256
+        Self.atacando = False
+        Self.andando = True
+    
+    def update(Self):
+        if Self.andando:
+            Self.index_lista += 0.25
+            if Self.index_lista > 12:
+                Self.index_lista = 0
+            Self.image = Self.sprite_medusa[int(Self.index_lista)]
+            if Self.rect.topright[0] < 0: 
+                Self.rect.x = largura_tela + randrange(100, 800, 200)
+            Self.rect.x -= 2
 #funções para o jogo
 def sair_menu():
     global menu, musica_game
@@ -231,6 +257,10 @@ for i in range((largura_tela*2) // 128):
 
 jogador = Player(100)
 todas_as_sprites.add(jogador)
+for i in range(2):
+    medusa = Monstros()
+    todas_as_sprites.add(medusa)
+#Loop principal
 rodando = True
 while rodando:
     while menu:
@@ -241,7 +271,7 @@ while rodando:
             if event.type == QUIT:
                 rodando = False
                 pygame.quit()
-                sys.exit()
+                exit()
             if event.type == KEYDOWN:
                 if event.key == K_z:
                     sair_menu()
