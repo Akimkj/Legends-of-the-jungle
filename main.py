@@ -114,6 +114,11 @@ class Player(pygame.sprite.Sprite):
         Self.andando = False
         Self.pulando= False
         Self.atacando = False
+        Self._vely = 0
+        Self.gravidade = 0.5
+
+
+
 
     def andar(Self):
         Self.andando = True
@@ -123,6 +128,13 @@ class Player(pygame.sprite.Sprite):
         Self.andando = False
         Self.parado = False
         Self.atacando = True
+
+    def pular(self):
+        if not self.pulando:
+           self.pulando = True
+           self.vel_y = -10
+
+
     def update(Self):
         if Self.atacando == True:
             if pygame.key.get_pressed()[K_f]:
@@ -162,7 +174,20 @@ class Player(pygame.sprite.Sprite):
                 Self.parado = True
                 Self.andando = False
                 pass
+        if Self.pulando:
+            if Self.index_lista > 25 or Self.index_lista < 14:
+                Self.index_lista = 14
+            Self.index_lista += 0.25
+            Self.image = Self.sprite[int(Self.index_lista)]
+            Self.vel_y += Self.gravidade  # Aplica gravidade
+            Self.rect.y += Self.vel_y  # Atualiza a posição vertical
 
+            # Verifica se o jogador atingiu o chão
+            if Self.rect.y >= altura_tela - 256:
+                Self.rect.y = altura_tela - 256
+                Self.pulando = False
+                Self.vel_y = 0
+                Self.parado = True
 
 #funções para o jogo
 def sair_menu():
@@ -233,6 +258,8 @@ while rodando:
         if event.type == KEYDOWN:
             if event.key == K_f:
                 jogador.atacar()
+            if event.key == K_SPACE:
+                jogador.pular()
 
     if pygame.key.get_pressed()[K_a]:
         jogador.andar()
