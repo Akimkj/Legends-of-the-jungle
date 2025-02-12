@@ -101,6 +101,7 @@ class Player(pygame.sprite.Sprite):
         Self.index_lista = 0
         Self.image = Self.sprite[Self.index_lista]
         Self.rect = Self.image.get_rect()
+        Self.mask = pygame.mask.from_surface(Self.image)
         Self.rect.x = pos_x
         Self.rect.y = altura_tela - 256
         Self.parado = True
@@ -108,7 +109,7 @@ class Player(pygame.sprite.Sprite):
         Self.pulando= False
         Self.atacando = False
         Self._vely = 0
-        Self.gravidade = 0.5
+        Self.gravidade = 0.4
 
 
 
@@ -201,6 +202,7 @@ class Monstros(pygame.sprite.Sprite):
         Self.index_lista = 0
         Self.image = Self.sprite_medusa[Self.index_lista]
         Self.rect = Self.image.get_rect()
+        Self.mask = pygame.mask.from_surface(Self.image)
         Self.rect.x = largura_tela + randrange(100, 800, 200)
         Self.rect.y = altura_tela - 256
         Self.atacando = False
@@ -257,9 +259,11 @@ for i in range((largura_tela*2) // 128):
 
 jogador = Player(100)
 todas_as_sprites.add(jogador)
+todos_inimigos = pygame.sprite.Group()
 for i in range(2):
     medusa = Monstros()
     todas_as_sprites.add(medusa)
+    todos_inimigos.add(medusa)
 #Loop principal
 rodando = True
 while rodando:
@@ -296,8 +300,14 @@ while rodando:
     if pygame.key.get_pressed()[K_d]:
         jogador.andar()
     
+
+    colisoes = pygame.sprite.spritecollide(jogador, todos_inimigos, False, pygame.sprite.collide_mask)
     todas_as_sprites.draw(tela)
-    todas_as_sprites.update()
+
+    if colisoes:
+        pass
+    else:
+        todas_as_sprites.update()
 
 
     pygame.display.flip()
