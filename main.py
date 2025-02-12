@@ -71,7 +71,7 @@ class Chao(pygame.sprite.Sprite):
             Self.rect.x = largura_tela
         Self.rect.x -= 4'''
 
-class Player(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite): 
     def __init__(Self, pos_x):
         super().__init__()
         Self.sprite = []
@@ -138,7 +138,8 @@ class Player(pygame.sprite.Sprite):
                 if Self.index_lista > 37 or Self.index_lista < 26:
                     Self.index_lista = 26
                 Self.index_lista += 0.18
-                Self.image = Self.sprite[int(Self.index_lista)] 
+                Self.image = Self.sprite[int(Self.index_lista)]
+                Self.mask = pygame.mask.from_surface(Self.image)
             else:
                 Self.parado = True
                 Self.atacando = False
@@ -149,12 +150,14 @@ class Player(pygame.sprite.Sprite):
                 Self.index_lista = 0
             Self.index_lista += 0.25
             Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
             
         if Self.andando == True:
             if Self.index_lista > 13 or Self.index_lista < 6:
                 Self.index_lista = 6
             Self.index_lista += 0.15
             Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
             if pygame.key.get_pressed()[K_a]:
                 if Self.rect.center[0] > 12:
                     Self.rect.x -= 3
@@ -176,6 +179,7 @@ class Player(pygame.sprite.Sprite):
             if Self.index_lista > 25 or Self.index_lista < 14:
                 Self.index_lista = 14
             Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
             Self.vel_y += Self.gravidade  # Aplica gravidade
             Self.rect.y += Self.vel_y  # Atualiza a posição vertical
 
@@ -305,7 +309,9 @@ while rodando:
     todas_as_sprites.draw(tela)
 
     if colisoes:
-        pass
+        if jogador.atacando == True:
+            medusa.rect.x = largura_tela + randrange(100, 800, 100)
+            todas_as_sprites.update()
     else:
         todas_as_sprites.update()
 
