@@ -29,7 +29,10 @@ sprite_player_jump = pygame.image.load(os.path.join(diretorio_sprites, "Jump.png
 sprite_player_attack = pygame.image.load(os.path.join(diretorio_sprites, "Attack_3_1.png")).convert_alpha()
 sprite_medusa_andando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Walk.png")).convert_alpha()
 sprite_medusa_atacando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Attack_1.png")).convert_alpha()
-
+sprite_medusa_morrendo = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Dead.png")).convert_alpha()
+sprite_lobisomem_andando = pygame.image.load(os.path.join(diretorio_sprites, "lobisomem_walk.png")).convert_alpha()
+sprite_lobisomem_atacando = pygame.image.load(os.path.join(diretorio_sprites, "lobisomen_Attack_1.png")).convert_alpha()
+sprite_lobisomem_morrendo = pygame.image.load(os.path.join(diretorio_sprites, "lobisomem_Dead.png")).convert_alpha()
 
 
 #classes
@@ -130,6 +133,7 @@ class Player(pygame.sprite.Sprite):
         if not Self.pulando:
            Self.pulando = True
            Self.vel_y = -10
+        Self.index_lista = 14
 
 
     def update(Self):
@@ -174,6 +178,7 @@ class Player(pygame.sprite.Sprite):
                 Self.parado = True
                 Self.andando = False
                 pass
+
         if Self.pulando:
             Self.index_lista += 0.25
             if Self.index_lista > 25 or Self.index_lista < 14:
@@ -190,37 +195,78 @@ class Player(pygame.sprite.Sprite):
                 Self.vel_y = 0
                 Self.parado = True
 
-class Monstros(pygame.sprite.Sprite): 
-    def __init__(Self):
+class Monstros(pygame.sprite.Sprite):
+    def __init__(Self, tipo):
         super().__init__()
-        Self.sprite_medusa = []
-        #[0] até [12]
-        for i in range(13):
-            img_walk = sprite_medusa_andando.subsurface((i * 128, 0),(128, 128)).convert_alpha()
-            Self.sprite_medusa.append(img_walk)
-        #[13] até [28]
-        for i in range(16):
-            img_attack = sprite_medusa_atacando.subsurface((i * 128, 0), (128, 128)).convert_alpha()
-            Self.sprite_medusa.append(img_attack)
-        
+        Self.tipo = tipo
+        if Self.tipo == "medusa":
+            Self.sprite = []
+            #[0] até [12]
+            for i in range(13):
+                img_walk = sprite_medusa_andando.subsurface((i * 128, 0),(128, 128)).convert_alpha()
+                Self.sprite.append(img_walk)
+            #[13] até [28]
+            for i in range(16):
+                img_attack = sprite_medusa_atacando.subsurface((i * 128, 0), (128, 128)).convert_alpha()
+                Self.sprite.append(img_attack)
+            #[29] até [31]
+            for i in range(2, -1, -1):
+                img_dead = sprite_medusa_morrendo.subsurface((i * 128, 0),(128, 128)).convert_alpha()
+                Self.sprite.append(img_dead)
+        elif Self.tipo == "lobisomem":
+            Self.sprite = []
+            #[0] até [10]
+            for i in range(11):
+                img_walk = sprite_lobisomem_andando.subsurface((i * 128, 0),(128, 128)).convert_alpha()
+                Self.sprite.append(img_walk)
+            #[11] até [16]
+            for i in range(5, -1, -1):
+                img_attack = sprite_lobisomem_atacando.subsurface((i * 128, 0), (128, 128)).convert_alpha()
+                Self.sprite.append(img_attack)
+            #[17] até [18]
+            for i in range(1, -1, -1):
+                img_dead = sprite_lobisomem_morrendo.subsurface((i * 128, 0),(128, 128)).convert_alpha()
+                Self.sprite.append(img_dead)
+
         Self.index_lista = 0
-        Self.image = Self.sprite_medusa[Self.index_lista]
+        Self.image = Self.sprite[Self.index_lista]
         Self.rect = Self.image.get_rect()
         Self.mask = pygame.mask.from_surface(Self.image)
         Self.rect.x = largura_tela + randrange(100, 800, 200)
         Self.rect.y = altura_tela - 256
         Self.atacando = False
         Self.andando = True
-    
+        Self.morrendo = False
+
+    def morreu(Self):
+        Self.atacando = False
+        Self.andando = False
+        if not Self.morrendo:
+            Self.morrendo = True
+
     def update(Self):
+        if Self.morrendo:
+            Self.index_lista += 0.25
+            if Self.index_lista > len(Self.sprite) - 1 or Self.index_lista < len(Self.sprite) - 3:
+                Self.index_lista = len(Self.sprite) - 3
+            Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
+            if Self.index_lista >= len(Self.sprite) - 1:
+                Self.morrendo = False
+                Self.andando = True 
+                Self.rect.x = largura_tela + randrange(100, 800, 200) 
+                Self.index_lista = 0  
+                
         if Self.andando:
             Self.index_lista += 0.25
             if Self.index_lista > 12:
                 Self.index_lista = 0
-            Self.image = Self.sprite_medusa[int(Self.index_lista)]
+            Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
             if Self.rect.topright[0] < 0: 
                 Self.rect.x = largura_tela + randrange(100, 800, 200)
             Self.rect.x -= 2
+        
 #funções para o jogo
 def sair_menu():
     global menu, musica_game
@@ -228,8 +274,9 @@ def sair_menu():
     musica_game = pygame.mixer.music.load(os.path.join(diretorio_musicas, "jungle.mp3"))
     musica_game = pygame.mixer.music.play(-1)
 
-# relogio fps
+# relogio fps e game over
 relogio = pygame.time.Clock()
+gameOver = False
 
 # config. imagem de fundo do menu
 fundo_menu = pygame.image.load(os.path.join(diretorio_sprites, "fundo-menu.jpg")).convert()
@@ -264,10 +311,13 @@ for i in range((largura_tela*2) // 128):
 jogador = Player(100)
 todas_as_sprites.add(jogador)
 todos_inimigos = pygame.sprite.Group()
-for i in range(2):
-    medusa = Monstros()
-    todas_as_sprites.add(medusa)
-    todos_inimigos.add(medusa)
+medusa = Monstros("medusa")
+todas_as_sprites.add(medusa)
+todos_inimigos.add(medusa)
+lobisomem = Monstros("lobisomem")
+todas_as_sprites.add(lobisomem)
+todos_inimigos.add(lobisomem)
+
 #Loop principal
 rodando = True
 while rodando:
@@ -310,10 +360,19 @@ while rodando:
 
     if colisoes:
         if jogador.atacando == True:
-            medusa.rect.x = largura_tela + randrange(100, 800, 100)
+            for inimigo in colisoes:
+                inimigo.morreu()
             todas_as_sprites.update()
+        else:
+            gameOver = True
+    
+    if gameOver:
+        fonte_game_over = pygame.font.SysFont('Pixeled', 100, True, False)
+        mensagem_game_over = fonte_game_over.render("GAME OVER", False, (255, 0, 0))
+        tela.blit(mensagem_game_over, (meio_largura_tela - mensagem_game_over.get_width() // 2, altura_tela // 2 - mensagem_game_over.get_height() // 2))
     else:
         todas_as_sprites.update()
-
+    
+    
 
     pygame.display.flip()
