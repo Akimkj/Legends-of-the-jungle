@@ -27,6 +27,7 @@ sprite_player_parado = pygame.image.load(os.path.join(diretorio_sprites, "Idle.p
 sprite_player_andando = pygame.image.load(os.path.join(diretorio_sprites, "Walk.png")).convert_alpha()
 sprite_player_jump = pygame.image.load(os.path.join(diretorio_sprites, "Jump.png")).convert_alpha()
 sprite_player_attack = pygame.image.load(os.path.join(diretorio_sprites, "Attack_3_1.png")).convert_alpha()
+sprite_player_dead = pygame.image.load(os.path.join(diretorio_sprites, "Dead.png")).convert_alpha()
 sprite_medusa_andando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Walk.png")).convert_alpha()
 sprite_medusa_atacando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Attack_1.png")).convert_alpha()
 sprite_medusa_morrendo = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Dead.png")).convert_alpha()
@@ -87,7 +88,7 @@ class Player(pygame.sprite.Sprite):
             img_walk = sprite_player_andando.subsurface((i * 128, 0), (128, 128)).convert_alpha()
             Self.sprite.append(img_walk)
         # [14] até [25]
-        for i in range(12):
+        for i in range(11, -1, -1):
             img_jump = sprite_player_jump.subsurface((i * 128, 0), (128, 128)).convert_alpha()
             Self.sprite.append(img_jump)
         # [26] até [37]
@@ -100,6 +101,10 @@ class Player(pygame.sprite.Sprite):
         for i in range(5):
             img_attack3 = sprite_player_attack.subsurface((i * 128, 256), (128, 128)).convert_alpha()
             Self.sprite.append(img_attack3)
+        #[38] até [41]
+        for i in range(4):
+            img_dead = sprite_player_dead.subsurface((i * 128, 0), (128, 128)).convert_alpha()
+            Self.sprite.append(img_dead)
 
         Self.index_lista = 0
         Self.image = Self.sprite[Self.index_lista]
@@ -111,25 +116,33 @@ class Player(pygame.sprite.Sprite):
         Self.andando = False
         Self.pulando= False
         Self.atacando = False
+        Self.morrendo = False
         Self._vely = 0
         Self.gravidade = 0.4
 
-
-
+    def morreu(Self):
+        Self.andando = False
+        Self.pulando = False
+        Self.parado = False
+        if not Self.morrendo:
+            Self.morrendo = True
 
     def andar(Self):
         Self.andando = True
         Self.parado = False
+        Self.morrendo = False
 
     def atacar(Self):
         Self.andando = False
         Self.parado = False
         Self.atacando = True
+        Self.morrendo = False
 
     def pular(Self):
         Self.parado = False
         Self.atacando = False
         Self.andando = False
+        Self.morrendo = False
         if not Self.pulando:
            Self.pulando = True
            Self.vel_y = -10
@@ -137,6 +150,15 @@ class Player(pygame.sprite.Sprite):
 
 
     def update(Self):
+        if Self.morrendo == True:
+            if Self.index_lista >  41 or Self.index_lista < 38:
+                Self.index_lista = 38
+            Self.index_lista += 0.01
+            Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
+            if Self.index_lista > 41:
+                Self.morrendo = False
+        
         if Self.atacando == True:
             if pygame.key.get_pressed()[K_f]:
                 if Self.index_lista > 37 or Self.index_lista < 26:
@@ -156,22 +178,22 @@ class Player(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             
-        if Self.andando == True:
+        if Self.andando == True and not Self.pulando:
             if Self.index_lista > 13 or Self.index_lista < 6:
                 Self.index_lista = 6
-            Self.index_lista += 0.15
+            Self.index_lista += 0.10
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if pygame.key.get_pressed()[K_a]:
                 if Self.rect.center[0] > 12:
-                    Self.rect.x -= 3
+                    Self.rect.x -= 2
             else:
                 Self.parado = True
                 Self.andando = False
                 pass
             if pygame.key.get_pressed()[K_d]:
                 if Self.rect.x < largura_tela:
-                    Self.rect.x += 2.5
+                    Self.rect.x += 2
                 if Self.rect.topright[0] >= largura_tela + 128:
                     Self.rect.x = 0 - 128
             else:
@@ -194,6 +216,15 @@ class Player(pygame.sprite.Sprite):
                 Self.pulando = False
                 Self.vel_y = 0
                 Self.parado = True
+            
+            if pygame.key.get_pressed()[K_a]:
+                if Self.rect.center[0] > 12:
+                    Self.rect.x -= 2
+            if pygame.key.get_pressed()[K_d]:
+                if Self.rect.x < largura_tela:
+                    Self.rect.x += 2
+                if Self.rect.topright[0] >= largura_tela + 128:
+                    Self.rect.x = 0 - 128
 
 class Monstros(pygame.sprite.Sprite):
     def __init__(Self, tipo):
@@ -268,11 +299,24 @@ class Monstros(pygame.sprite.Sprite):
             Self.rect.x -= 2
         
 #funções para o jogo
-def sair_menu():
-    global menu, musica_game
+def iniciar_gameplay():
+    global menu, musica_game, gameOver
+    jogador.morrendo = False
+    jogador.parado = True
+    jogador.rect.x = 100
+    medusa.rect.x = largura_tela + randrange(100, 800, 200)
+    lobisomem.rect.x = largura_tela + randrange(100, 800, 200)
+    
     menu = False
+    gameOver = False
     musica_game = pygame.mixer.music.load(os.path.join(diretorio_musicas, "jungle.mp3"))
     musica_game = pygame.mixer.music.play(-1)
+
+def morreu():
+    global musica_gameOver
+    musica_gameOver = pygame.mixer.music.load(os.path.join(diretorio_musicas, "Once-Upon-a-Time.mp3"))
+    musica_gameOver = pygame.mixer.music.play(-1)
+
 
 # relogio fps e game over
 relogio = pygame.time.Clock()
@@ -288,8 +332,8 @@ fundo_game = pygame.image.load(os.path.join(diretorio_sprites, "fundo_game.png")
 fundo_game = pygame.transform.scale(fundo_game, (largura_tela, altura_tela))
 
 #texto menu
-mensagem = "Pressione z para começar"
-fonte_menu = pygame.font.SysFont('Pixeled', 50, True, False)
+mensagem = "Pressione 'z' para começar"
+fonte_menu = pygame.font.SysFont('pixeledregular', 20, True, False)
 start_formatado = fonte_menu.render(mensagem, False, (160, 42, 45))
 
 #musicas
@@ -332,7 +376,7 @@ while rodando:
                 exit()
             if event.type == KEYDOWN:
                 if event.key == K_z:
-                    sair_menu()
+                    iniciar_gameplay()
         pygame.display.flip()
     
 
@@ -364,14 +408,37 @@ while rodando:
                 inimigo.morreu()
             todas_as_sprites.update()
         else:
+            morreu()
+            jogador.morreu()
             gameOver = True
     
-    if gameOver:
-        fonte_game_over = pygame.font.SysFont('Pixeled', 100, True, False)
+    while gameOver:
+        tela.fill((0, 0, 0))
+        #mostrar personagem e chão
+        jogador.update() 
+        tela.blit(jogador.image, jogador.rect)
+        
+        #texto game over
+        fonte_game_over = pygame.font.SysFont('pixeledregular', 50, True, False)
         mensagem_game_over = fonte_game_over.render("GAME OVER", False, (255, 0, 0))
-        tela.blit(mensagem_game_over, (meio_largura_tela - mensagem_game_over.get_width() // 2, altura_tela // 2 - mensagem_game_over.get_height() // 2))
-    else:
-        todas_as_sprites.update()
+        tela.blit(mensagem_game_over, (meio_largura_tela - mensagem_game_over.get_width() // 2, altura_tela // 2 - 150))
+
+        #texto para retornar 
+        fonte_guia_gameOver = pygame.font.SysFont('pixeledregular', 25, True, False)
+        mensagem_voltar = fonte_guia_gameOver.render("Aperte 'r' para recomeçar", False, (255, 0, 0))
+        tela.blit(mensagem_voltar, (meio_largura_tela - mensagem_voltar.get_width() // 2, altura_tela // 2))
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                rodando = False
+                pygame.quit()
+                exit()
+            if event.type == KEYDOWN:
+                if event.key == K_r:
+                    iniciar_gameplay()
+        
+        pygame.display.flip()
+
+    todas_as_sprites.update()
     
     
 
