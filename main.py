@@ -21,6 +21,7 @@ pygame.display.set_icon(icon)
 
 
 #baixando sprites
+sprite_button = pygame.image.load(os.path.join(diretorio_sprites, "button3.png")).convert_alpha()
 sprite_birds = pygame.image.load(os.path.join(diretorio_sprites, "birds.32x32.png")).convert_alpha()
 sprite_chao = pygame.image.load(os.path.join(diretorio_sprites, "grass_main_128x128.png")).convert_alpha()
 sprite_player_parado = pygame.image.load(os.path.join(diretorio_sprites, "Idle.png")).convert_alpha()
@@ -159,7 +160,7 @@ class Player(pygame.sprite.Sprite):
             if Self.index_lista > 41:
                 Self.morrendo = False
         
-        if Self.atacando == True:
+        if Self.atacando == True and not Self.andando:
             if pygame.key.get_pressed()[K_f]:
                 if Self.index_lista > 37 or Self.index_lista < 26:
                     Self.index_lista = 26
@@ -181,19 +182,19 @@ class Player(pygame.sprite.Sprite):
         if Self.andando == True and not Self.pulando:
             if Self.index_lista > 13 or Self.index_lista < 6:
                 Self.index_lista = 6
-            Self.index_lista += 0.10
+            Self.index_lista += 0.15
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if pygame.key.get_pressed()[K_a]:
                 if Self.rect.center[0] > 12:
-                    Self.rect.x -= 2
+                    Self.rect.x -= 3
             else:
                 Self.parado = True
                 Self.andando = False
                 pass
             if pygame.key.get_pressed()[K_d]:
                 if Self.rect.x < largura_tela:
-                    Self.rect.x += 2
+                    Self.rect.x += 3
                 if Self.rect.topright[0] >= largura_tela + 128:
                     Self.rect.x = 0 - 128
             else:
@@ -283,9 +284,9 @@ class Monstros(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if Self.index_lista >= len(Self.sprite) - 1:
+                Self.rect.x = largura_tela + randrange(100, 800, 200)
                 Self.morrendo = False
                 Self.andando = True 
-                Self.rect.x = largura_tela + randrange(100, 800, 200) 
                 Self.index_lista = 0  
                 
         if Self.andando:
@@ -304,8 +305,9 @@ def iniciar_gameplay():
     jogador.morrendo = False
     jogador.parado = True
     jogador.rect.x = 100
-    medusa.rect.x = largura_tela + randrange(100, 800, 200)
-    lobisomem.rect.x = largura_tela + randrange(100, 800, 200)
+    jogador.rect.y = altura_tela - 256
+    for inimigo in todos_inimigos:
+        inimigo.rect.x = largura_tela + randrange(100, 800, 200)
     
     menu = False
     gameOver = False
@@ -333,7 +335,7 @@ fundo_game = pygame.transform.scale(fundo_game, (largura_tela, altura_tela))
 
 #texto menu
 mensagem = "Pressione 'z' para começar"
-fonte_menu = pygame.font.SysFont('pixeledregular', 20, True, False)
+fonte_menu = pygame.font.SysFont('pixeledregular', 17, True, False)
 start_formatado = fonte_menu.render(mensagem, False, (160, 42, 45))
 
 #musicas
@@ -355,20 +357,23 @@ for i in range((largura_tela*2) // 128):
 jogador = Player(100)
 todas_as_sprites.add(jogador)
 todos_inimigos = pygame.sprite.Group()
-medusa = Monstros("medusa")
-todas_as_sprites.add(medusa)
-todos_inimigos.add(medusa)
-lobisomem = Monstros("lobisomem")
-todas_as_sprites.add(lobisomem)
-todos_inimigos.add(lobisomem)
+for i in range(2):
+    medusa = Monstros("medusa")
+    todas_as_sprites.add(medusa)
+    todos_inimigos.add(medusa)
+for i in range(2):
+    lobisomem = Monstros("lobisomem")
+    todas_as_sprites.add(lobisomem)
+    todos_inimigos.add(lobisomem)
 
 #Loop principal
 rodando = True
 while rodando:
     while menu:
         tela.blit(fundo_menu, (0,0))
-        tela.blit(icon, (meio_largura_tela - (icon.get_width() + 20) // 2, 10))
-        tela.blit(start_formatado, (meio_largura_tela - start_formatado.get_width() // 2, 340))
+        tela.blit(icon, (meio_largura_tela - icon.get_width() // 2, 20))
+        tela.blit(sprite_button, (meio_largura_tela - sprite_button.get_width() // 2, 340))
+        tela.blit(start_formatado, (meio_largura_tela - (start_formatado.get_width() - 10) // 2, 375))
         for event in pygame.event.get():
             if event.type == QUIT:
                 rodando = False
@@ -423,7 +428,7 @@ while rodando:
         mensagem_game_over = fonte_game_over.render("GAME OVER", False, (255, 0, 0))
         tela.blit(mensagem_game_over, (meio_largura_tela - mensagem_game_over.get_width() // 2, altura_tela // 2 - 150))
 
-        #texto para retornar 
+        #texto para retornar ao jogo
         fonte_guia_gameOver = pygame.font.SysFont('pixeledregular', 25, True, False)
         mensagem_voltar = fonte_guia_gameOver.render("Aperte 'r' para recomeçar", False, (255, 0, 0))
         tela.blit(mensagem_voltar, (meio_largura_tela - mensagem_voltar.get_width() // 2, altura_tela // 2))
