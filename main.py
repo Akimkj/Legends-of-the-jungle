@@ -22,8 +22,8 @@ relogio = pygame.time.Clock()
 gameOver = False
 pause = False
 vida = 6000
-pontos = 0  # Variável para armazenar a pontuação
-musica_vitoria_tocada = False  # Controla se a música de vitória já foi tocada
+pontos = 0  
+musica_vitoria_tocada = False 
 
 #baixando sprites
 sprite_button = pygame.image.load(os.path.join(diretorio_sprites, "button3.png")).convert_alpha()
@@ -143,6 +143,7 @@ class Player(pygame.sprite.Sprite):
         Self.andando = True
         Self.parado = False
         Self.morrendo = False
+        Self.atacando = False
 
     def atacar(Self):
         tempo_atual = pygame.time.get_ticks()
@@ -394,7 +395,7 @@ mensagem = "Pressione 'z' para começar"
 fonte_menu = pygame.font.SysFont('pixeledregular', 17, True, False)
 start_formatado = fonte_menu.render(mensagem, False, (160, 42, 45))
 
-#musicas
+#musica menu
 pygame.mixer.music.set_volume(0.4)
 musica_menu = pygame.mixer.music.load(os.path.join(diretorio_musicas, "overworld-day.mp3"))
 musica_menu = pygame.mixer.music.play(-1)
@@ -424,6 +425,7 @@ for i in range(2):
 #Loop principal
 rodando = True
 while rodando:
+    #Tela menu
     while menu:
         tela.blit(fundo_menu, (0,0))
         tela.blit(icon, (meio_largura_tela - icon.get_width() // 2, 20))
@@ -439,6 +441,7 @@ while rodando:
                     iniciar_gameplay()
         pygame.display.flip()
     
+    # configura fps, fundo durante jogatina e mostra a vida do jogador
     relogio.tick(45)
     tela.blit(fundo_game, (0, 0))
     mostra_vida(tela, jogador.vida)
@@ -447,12 +450,13 @@ while rodando:
     fonte_pontos = pygame.font.SysFont("pixeledregular", 20, True, False)
     texto_pontos = fonte_pontos.render(f'Pontos: {pontos}', False, (255, 255, 255))
     tela.blit(texto_pontos, (largura_tela - texto_pontos.get_width() - 30, 10))
-
+    
+    # configura o cooldown do ataque
     tempo_atual = pygame.time.get_ticks()
     tempo_restante = max(0, jogador.duracao_cooldown - (tempo_atual - jogador.tempo_ultimo_ataque))
-
     mostra_cooldown(tela, tempo_restante)
     
+    # analise de ocorrencia de evento do loop principal
     for event in pygame.event.get():
         if event.type == QUIT:
             rodando = False
@@ -465,22 +469,26 @@ while rodando:
                 jogador.pular()
             if event.key == K_p:
                 pause = True
-    
+
+    # verifica movimentação
     if pygame.key.get_pressed()[K_a]:
         jogador.andar()
     if pygame.key.get_pressed()[K_d]:
         jogador.andar()
 
+    # verifica se o jogador está invulneravel e contabiliza o tempo 
     if jogador.invulneravel:
         tempo_atual = pygame.time.get_ticks()
         if tempo_atual - jogador.tempo_invulneravel > jogador.cooldowm_dano:
             jogador.invulneravel = False
 
+    #atualiza o metodo update de todas as sprites
     todas_as_sprites.update()
-    colisoes = pygame.sprite.spritecollide(jogador, todos_inimigos, False, pygame.sprite.collide_mask)
 
+    #determina a colisao
+    colisoes = pygame.sprite.spritecollide(jogador, todos_inimigos, False, pygame.sprite.collide_mask)
     if colisoes:
-        if jogador.atacando == True:
+        if jogador.atacando == True: 
             for inimigo in colisoes:
                 if not inimigo.morrendo:
                     inimigo.morreu()  # Coloca o monstro no estado de "morrendo"
@@ -499,7 +507,7 @@ while rodando:
                    jogador.morreu()
                    gameOver = True
 
-    # Verifica se o jogador venceu
+    # Verifica se o jogador venceu // tela de vitória
     while pontos >= 20:
         tela_vitoria(tela)
         for event in pygame.event.get():
@@ -514,6 +522,7 @@ while rodando:
         todas_as_sprites.draw(tela)
         pygame.display.flip()
 
+    #Caso o jogador aperte 'p'
     while pause:
         #texto pause
         fonte_pause = pygame.font.SysFont("pixeledregular", 25, True, False)
@@ -535,6 +544,7 @@ while rodando:
         
         pygame.display.flip()
 
+    #Tela de gameOver
     while gameOver:
         tela.fill((0, 0, 0))  # Preenche a tela com preto
         jogador.update() 
