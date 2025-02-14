@@ -356,7 +356,7 @@ def mostra_cooldown(tela, tempo):
         texto_cooldown = fonte_cooldown.render(f"Ataque: {tempo // 1000}", False, (255, 0, 0))
     else:
         texto_cooldown = fonte_cooldown.render("Ataque carregado.", False, (0, 255, 0))
-    tela.blit(texto_cooldown, (largura_tela - texto_cooldown.get_width() - 10, 10))
+    tela.blit(texto_cooldown, (10, 50))
 
 # config. imagem de fundo do menu
 fundo_menu = pygame.image.load(os.path.join(diretorio_sprites, "fundo-menu.jpg")).convert()
