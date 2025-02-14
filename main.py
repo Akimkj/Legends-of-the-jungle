@@ -123,6 +123,11 @@ class Player(pygame.sprite.Sprite):
         Self.morrendo = False
         Self._vely = 0
         Self.gravidade = 0.4
+        Self.vida = 100
+        Self.ultimo_dano = 0
+        Self.invulneravel = 0
+        Self.tempo_invulneravel = 0
+        Self.cooldowm_dano = 1000
 
     def morreu(Self):
         Self.andando = False
@@ -312,6 +317,7 @@ def iniciar_gameplay():
     jogador.parado = True
     jogador.rect.x = 100
     jogador.rect.y = altura_tela - 256
+    jogador.vida = 100
     for inimigo in todos_inimigos:
         inimigo.rect.x = largura_tela + randrange(100, 800, 200)
     
@@ -325,6 +331,10 @@ def morreu():
     musica_gameOver = pygame.mixer.music.load(os.path.join(diretorio_musicas, "Once-Upon-a-Time.mp3"))
     musica_gameOver = pygame.mixer.music.play(-1)
 
+def mostra_vida(tela, vida):
+        fonte_vida = pygame.font.SysFont("pixeledregular", 20, True, False) 
+        texto_vida = fonte_vida.render(F'Vida: {vida}', False, (255, 0, 0))
+        tela.blit(texto_vida, (10,10))
 
 # config. imagem de fundo do menu
 fundo_menu = pygame.image.load(os.path.join(diretorio_sprites, "fundo-menu.jpg")).convert()
@@ -385,9 +395,9 @@ while rodando:
                     iniciar_gameplay()
         pygame.display.flip()
     
-
     relogio.tick(45)
     tela.blit(fundo_game, (0, 0))
+    mostra_vida(tela, jogador.vida)
     for event in pygame.event.get():
         if event.type == QUIT:
             rodando = False
@@ -405,7 +415,10 @@ while rodando:
         jogador.andar()
     if pygame.key.get_pressed()[K_d]:
         jogador.andar()
-
+    if jogador.invulneravel:
+        tempo_atual = pygame.time.get_ticks()
+        if tempo_atual - jogador.tempo_invulneravel > jogador.cooldowm_dano:
+            jogador.invulneravel = False
     todas_as_sprites.update()
     colisoes = pygame.sprite.spritecollide(jogador, todos_inimigos, False, pygame.sprite.collide_mask)
 
@@ -415,9 +428,15 @@ while rodando:
                 inimigo.morreu()
             todas_as_sprites.update()
         else:
-            morreu()
-            jogador.morreu()
-            gameOver = True
+            tempo_atual = pygame.time.get_ticks()
+            if not jogador.invulneravel:
+               jogador.vida -= 10
+               jogador.invulneravel = True
+               jogador.tempo_invulneravel = tempo_atual
+               if jogador.vida <= 0:
+                   morreu()
+                   jogador.morreu()
+                   gameOver = True
 
     todas_as_sprites.draw(tela)
     while pause:
