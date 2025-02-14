@@ -22,7 +22,8 @@ relogio = pygame.time.Clock()
 gameOver = False
 pause = False
 vida = 6000
-
+pontos = 0  # Variável para armazenar a pontuação
+musica_vitoria_tocada = False  # Controla se a música de vitória já foi tocada
 
 #baixando sprites
 sprite_button = pygame.image.load(os.path.join(diretorio_sprites, "button3.png")).convert_alpha()
@@ -64,8 +65,8 @@ class Birds(pygame.sprite.Sprite):
         Self.image = pygame.transform.scale(Self.image, (32  * 1.5, 32 * 1.5))
         if Self.rect.topright[0] < 0: 
             Self.rect.x = largura_tela + randrange(20, 450, 50)
-            Self.rect.y = randrange(50, 250, 30) 
-        Self.rect.x -= 4 
+            Self.rect.y = randrange(50, 250, 50)
+        Self.rect.x -= 4          
 
 class Chao(pygame.sprite.Sprite):
     def __init__(Self, pos_x):
@@ -75,10 +76,6 @@ class Chao(pygame.sprite.Sprite):
         Self.rect.y = altura_tela - 128
         Self.rect.x = pos_x * 128
         Self.playerAndando = False
-    '''def update(Self):
-        if Self.rect.topright[0] < 0:
-            Self.rect.x = largura_tela
-        Self.rect.x -= 4'''
 
 class Player(pygame.sprite.Sprite): 
     def __init__(Self, pos_x):
@@ -166,7 +163,6 @@ class Player(pygame.sprite.Sprite):
            Self.pulando = True
            Self.vel_y = -10
         Self.index_lista = 14
-
 
     def update(Self):
         tempo_atual = pygame.time.get_ticks()
@@ -294,12 +290,14 @@ class Monstros(pygame.sprite.Sprite):
         Self.atacando = False
         Self.andando = True
         Self.morrendo = False
+        Self.morto = False  # Adicionado para controlar se o monstro já foi pontuado
 
     def morreu(Self):
         Self.atacando = False
         Self.andando = False
         if not Self.morrendo:
             Self.morrendo = True
+            Self.morto = False  # Inicializa como False
 
     def update(Self):
         if Self.morrendo:
@@ -326,7 +324,7 @@ class Monstros(pygame.sprite.Sprite):
         
 #funções para o jogo
 def iniciar_gameplay():
-    global menu, musica_game, gameOver
+    global menu, musica_game, gameOver, pontos, musica_vitoria_tocada
     jogador.morrendo = False
     jogador.parado = True
     jogador.rect.x = 100
@@ -334,9 +332,13 @@ def iniciar_gameplay():
     jogador.vida = 100
     for inimigo in todos_inimigos:
         inimigo.rect.x = largura_tela + randrange(100, 800, 200)
+        inimigo.morrendo = False
+        inimigo.morto = False
     
     menu = False
     gameOver = False
+    pontos = 0  # Reseta a pontuação
+    musica_vitoria_tocada = False  # Reseta a música de vitória
     musica_game = pygame.mixer.music.load(os.path.join(diretorio_musicas, "jungle.mp3"))
     musica_game = pygame.mixer.music.play(-1)
 
@@ -358,6 +360,26 @@ def mostra_cooldown(tela, tempo):
         texto_cooldown = fonte_cooldown.render("Ataque carregado.", False, (0, 255, 0))
     tela.blit(texto_cooldown, (10, 50))
 
+def tela_vitoria(tela):
+    global musica_vitoria_tocada
+    if not musica_vitoria_tocada:
+        pygame.mixer.music.load(os.path.join(diretorio_musicas, "vitoria.mp3"))  # Carrega a música de vitória
+        pygame.mixer.music.play(-1)  # Toca a música em loop
+        musica_vitoria_tocada = True
+
+    tela.fill((0, 0, 0))  # Preenche a tela com preto
+
+    # Texto de vitória
+    fonte_vitoria = pygame.font.SysFont('pixeledregular', 50, True, False)
+    mensagem_vitoria = fonte_vitoria.render("VITÓRIA!", False, (0, 255, 0))
+    tela.blit(mensagem_vitoria, (meio_largura_tela - mensagem_vitoria.get_width() // 2, altura_tela // 2 - 150))
+    # Texto para reiniciar o jogo
+    fonte_reiniciar = pygame.font.SysFont('pixeledregular', 25, True, False)
+    mensagem_reiniciar = fonte_reiniciar.render("Aperte 'r' para jogar novamente", False, (255, 255, 255))
+    tela.blit(mensagem_reiniciar, (meio_largura_tela - mensagem_reiniciar.get_width() // 2, altura_tela // 2 + 50))
+
+    pygame.display.flip()
+
 # config. imagem de fundo do menu
 fundo_menu = pygame.image.load(os.path.join(diretorio_sprites, "fundo-menu.jpg")).convert()
 fundo_menu = pygame.transform.scale(fundo_menu, (largura_tela, altura_tela))
@@ -376,7 +398,6 @@ start_formatado = fonte_menu.render(mensagem, False, (160, 42, 45))
 pygame.mixer.music.set_volume(0.4)
 musica_menu = pygame.mixer.music.load(os.path.join(diretorio_musicas, "overworld-day.mp3"))
 musica_menu = pygame.mixer.music.play(-1)
-
 
 #Objetos
 todas_as_sprites = pygame.sprite.Group()
@@ -400,7 +421,6 @@ for i in range(2):
     todas_as_sprites.add(lobisomem)
     todos_inimigos.add(lobisomem)
 
-
 #Loop principal
 rodando = True
 while rodando:
@@ -423,6 +443,11 @@ while rodando:
     tela.blit(fundo_game, (0, 0))
     mostra_vida(tela, jogador.vida)
     
+    # Exibe a pontuação
+    fonte_pontos = pygame.font.SysFont("pixeledregular", 20, True, False)
+    texto_pontos = fonte_pontos.render(f'Pontos: {pontos}', False, (255, 255, 255))
+    tela.blit(texto_pontos, (largura_tela - texto_pontos.get_width() - 30, 10))
+
     tempo_atual = pygame.time.get_ticks()
     tempo_restante = max(0, jogador.duracao_cooldown - (tempo_atual - jogador.tempo_ultimo_ataque))
 
@@ -457,7 +482,11 @@ while rodando:
     if colisoes:
         if jogador.atacando == True:
             for inimigo in colisoes:
-                inimigo.morreu()
+                if not inimigo.morrendo:
+                    inimigo.morreu()  # Coloca o monstro no estado de "morrendo"
+                elif inimigo.morrendo and not inimigo.morto:  # Verifica se o monstro está morrendo e ainda não foi pontuado
+                    pontos += 1  # Incrementa a pontuação
+                    inimigo.morto = True  # Marca o monstro como morto e pontuado
             todas_as_sprites.update()
         else:
             tempo_atual = pygame.time.get_ticks()
@@ -470,7 +499,21 @@ while rodando:
                    jogador.morreu()
                    gameOver = True
 
-    todas_as_sprites.draw(tela)
+    # Verifica se o jogador venceu
+    while pontos >= 20:
+        tela_vitoria(tela)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                rodando = False
+                pygame.quit()
+                exit()
+            if event.type == KEYDOWN:
+                if event.key == K_r:
+                    iniciar_gameplay()
+    else:
+        todas_as_sprites.draw(tela)
+        pygame.display.flip()
+
     while pause:
         #texto pause
         fonte_pause = pygame.font.SysFont("pixeledregular", 25, True, False)
@@ -490,23 +533,24 @@ while rodando:
                 if event.key == K_p:
                     pause = False
         
-        pygame.display.flip()    
+        pygame.display.flip()
 
     while gameOver:
-        tela.fill((0, 0, 0))
-        #mostrar personagem e chão
+        tela.fill((0, 0, 0))  # Preenche a tela com preto
         jogador.update() 
         tela.blit(jogador.image, jogador.rect)
-        
-        #texto game over
+        # Texto Game Over
         fonte_game_over = pygame.font.SysFont('pixeledregular', 50, True, False)
         mensagem_game_over = fonte_game_over.render("GAME OVER", False, (255, 0, 0))
         tela.blit(mensagem_game_over, (meio_largura_tela - mensagem_game_over.get_width() // 2, altura_tela // 2 - 150))
 
-        #texto para retornar ao jogo
-        fonte_guia_gameOver = pygame.font.SysFont('pixeledregular', 25, True, False)
-        mensagem_voltar = fonte_guia_gameOver.render("Aperte 'r' para recomeçar", False, (255, 0, 0))
-        tela.blit(mensagem_voltar, (meio_largura_tela - mensagem_voltar.get_width() // 2, altura_tela // 2))
+        # Texto para reiniciar o jogo
+        fonte_reiniciar = pygame.font.SysFont('pixeledregular', 25, True, False)
+        mensagem_reiniciar = fonte_reiniciar.render("Aperte 'r' para recomeçar", False, (255, 255, 255))
+        tela.blit(mensagem_reiniciar, (meio_largura_tela - mensagem_reiniciar.get_width() // 2, altura_tela // 2))
+
+        pygame.display.flip()
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 rodando = False
@@ -515,8 +559,4 @@ while rodando:
             if event.type == KEYDOWN:
                 if event.key == K_r:
                     iniciar_gameplay()
-        
-        pygame.display.flip()
-
-    
-    pygame.display.flip()
+                    gameOver = False
