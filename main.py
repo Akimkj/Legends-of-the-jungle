@@ -21,6 +21,7 @@ pygame.display.set_icon(icon)
 relogio = pygame.time.Clock()
 gameOver = False
 pause = False
+vida = 6000
 
 
 #baixando sprites
@@ -123,11 +124,16 @@ class Player(pygame.sprite.Sprite):
         Self.morrendo = False
         Self._vely = 0
         Self.gravidade = 0.4
+        #mecanica de vida
         Self.vida = 100
         Self.ultimo_dano = 0
         Self.invulneravel = 0
         Self.tempo_invulneravel = 0
         Self.cooldowm_dano = 1000
+        #mecanica ataque
+        Self.cooldown_ataque = False  
+        Self.tempo_ultimo_ataque = 0 
+        Self.duracao_cooldown = 5000
 
     def morreu(Self):
         Self.andando = False
@@ -142,10 +148,14 @@ class Player(pygame.sprite.Sprite):
         Self.morrendo = False
 
     def atacar(Self):
-        Self.andando = False
-        Self.parado = False
-        Self.atacando = True
-        Self.morrendo = False
+        tempo_atual = pygame.time.get_ticks()
+        if not Self.cooldown_ataque:
+            Self.andando = False
+            Self.parado = False
+            Self.atacando = True
+            Self.morrendo = False
+            Self.tempo_ultimo_ataque = tempo_atual  
+            Self.cooldown_ataque = True  
 
     def pular(Self):
         Self.parado = False
@@ -159,6 +169,11 @@ class Player(pygame.sprite.Sprite):
 
 
     def update(Self):
+        tempo_atual = pygame.time.get_ticks()
+
+        if Self.cooldown_ataque and tempo_atual - Self.tempo_ultimo_ataque > Self.duracao_cooldown:
+            Self.cooldown_ataque = False
+
         if Self.morrendo == True:
             if Self.index_lista >  41 or Self.index_lista < 38:
                 Self.index_lista = 38
@@ -169,16 +184,15 @@ class Player(pygame.sprite.Sprite):
                 Self.morrendo = False
         
         if Self.atacando == True and not Self.andando:
-            if pygame.key.get_pressed()[K_f]:
-                if Self.index_lista > 37 or Self.index_lista < 26:
-                    Self.index_lista = 26
-                Self.index_lista += 0.18
-                Self.image = Self.sprite[int(Self.index_lista)]
-                Self.mask = pygame.mask.from_surface(Self.image)
-            else:
-                Self.parado = True
+            if Self.index_lista > 37 or Self.index_lista < 26:
+                Self.index_lista = 26
+            Self.index_lista += 0.18  
+            Self.image = Self.sprite[int(Self.index_lista)]
+            Self.mask = pygame.mask.from_surface(Self.image)
+
+            if Self.index_lista >= 37:
                 Self.atacando = False
-                pass
+                Self.parado = True
         
         if Self.parado == True:
             if Self.index_lista > 5:
@@ -195,14 +209,14 @@ class Player(pygame.sprite.Sprite):
             Self.mask = pygame.mask.from_surface(Self.image)
             if pygame.key.get_pressed()[K_a]:
                 if Self.rect.center[0] > 12:
-                    Self.rect.x -= 3
+                    Self.rect.x -= 2
             else:
                 Self.parado = True
                 Self.andando = False
                 pass
             if pygame.key.get_pressed()[K_d]:
                 if Self.rect.x < largura_tela:
-                    Self.rect.x += 3
+                    Self.rect.x += 2
                 if Self.rect.topright[0] >= largura_tela + 128:
                     Self.rect.x = 0 - 128
             else:
@@ -308,7 +322,7 @@ class Monstros(pygame.sprite.Sprite):
             Self.mask = pygame.mask.from_surface(Self.image)
             if Self.rect.topright[0] < 0: 
                 Self.rect.x = largura_tela + randrange(100, 1000, 200)
-            Self.rect.x -= 2
+            Self.rect.x -= 3.5
         
 #funções para o jogo
 def iniciar_gameplay():
@@ -332,9 +346,17 @@ def morreu():
     musica_gameOver = pygame.mixer.music.play(-1)
 
 def mostra_vida(tela, vida):
-        fonte_vida = pygame.font.SysFont("pixeledregular", 20, True, False) 
-        texto_vida = fonte_vida.render(F'Vida: {vida}', False, (255, 0, 0))
-        tela.blit(texto_vida, (10,10))
+    fonte_vida = pygame.font.SysFont("pixeledregular", 20, True, False) 
+    texto_vida = fonte_vida.render(f'Vida: {vida}', False, (255, 0, 0))
+    tela.blit(texto_vida, (10,10))
+
+def mostra_cooldown(tela, tempo):
+    fonte_cooldown = pygame.font.SysFont("pixeledregular", 20, True, False)
+    if tempo > 0:
+        texto_cooldown = fonte_cooldown.render(f"Ataque: {tempo // 1000}", False, (255, 0, 0))
+    else:
+        texto_cooldown = fonte_cooldown.render("Ataque carregado.", False, (0, 255, 0))
+    tela.blit(texto_cooldown, (largura_tela - texto_cooldown.get_width() - 10, 10))
 
 # config. imagem de fundo do menu
 fundo_menu = pygame.image.load(os.path.join(diretorio_sprites, "fundo-menu.jpg")).convert()
@@ -377,6 +399,8 @@ for i in range(2):
     lobisomem = Monstros("lobisomem")
     todas_as_sprites.add(lobisomem)
     todos_inimigos.add(lobisomem)
+
+
 #Loop principal
 rodando = True
 while rodando:
@@ -398,6 +422,13 @@ while rodando:
     relogio.tick(45)
     tela.blit(fundo_game, (0, 0))
     mostra_vida(tela, jogador.vida)
+    # Calcula o tempo restante do cooldown
+    tempo_atual = pygame.time.get_ticks()
+    tempo_restante = max(0, jogador.duracao_cooldown - (tempo_atual - jogador.tempo_ultimo_ataque))
+
+    # Exibe o cooldown na tela
+    mostra_cooldown(tela, tempo_restante)
+    
     for event in pygame.event.get():
         if event.type == QUIT:
             rodando = False
@@ -415,10 +446,12 @@ while rodando:
         jogador.andar()
     if pygame.key.get_pressed()[K_d]:
         jogador.andar()
+
     if jogador.invulneravel:
         tempo_atual = pygame.time.get_ticks()
         if tempo_atual - jogador.tempo_invulneravel > jogador.cooldowm_dano:
             jogador.invulneravel = False
+
     todas_as_sprites.update()
     colisoes = pygame.sprite.spritecollide(jogador, todos_inimigos, False, pygame.sprite.collide_mask)
 
