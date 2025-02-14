@@ -422,11 +422,10 @@ while rodando:
     relogio.tick(45)
     tela.blit(fundo_game, (0, 0))
     mostra_vida(tela, jogador.vida)
-    # Calcula o tempo restante do cooldown
+    
     tempo_atual = pygame.time.get_ticks()
     tempo_restante = max(0, jogador.duracao_cooldown - (tempo_atual - jogador.tempo_ultimo_ataque))
 
-    # Exibe o cooldown na tela
     mostra_cooldown(tela, tempo_restante)
     
     for event in pygame.event.get():
