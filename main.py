@@ -10,7 +10,7 @@ diretorio_principal = os.path.dirname(__file__)
 diretorio_sprites = os.path.join(diretorio_principal, "sprites")
 diretorio_musicas = os.path.join(diretorio_principal, "musicas")
 
-# variaveis tela
+# variaveis gerais
 largura_tela = 990
 meio_largura_tela = largura_tela // 2
 altura_tela = 555
@@ -18,6 +18,9 @@ tela = pygame.display.set_mode((largura_tela, altura_tela))
 pygame.display.set_caption("Legends Of The Jungle")
 icon = pygame.image.load(os.path.join(diretorio_sprites, "icon-game.png")).convert_alpha()
 pygame.display.set_icon(icon)
+relogio = pygame.time.Clock()
+gameOver = False
+pause = False
 
 
 #baixando sprites
@@ -29,7 +32,7 @@ sprite_player_andando = pygame.image.load(os.path.join(diretorio_sprites, "Walk.
 sprite_player_jump = pygame.image.load(os.path.join(diretorio_sprites, "Jump.png")).convert_alpha()
 sprite_player_attack = pygame.image.load(os.path.join(diretorio_sprites, "Attack_3_1.png")).convert_alpha()
 sprite_player_dead = pygame.image.load(os.path.join(diretorio_sprites, "Dead.png")).convert_alpha()
-sprite_medusa_andando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Walk.png")).convert_alpha()
+sprite_medusa_andando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Walk1.png")).convert_alpha()
 sprite_medusa_atacando = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Attack_1.png")).convert_alpha()
 sprite_medusa_morrendo = pygame.image.load(os.path.join(diretorio_sprites, "medusa_Dead.png")).convert_alpha()
 sprite_lobisomem_andando = pygame.image.load(os.path.join(diretorio_sprites, "lobisomem_walk.png")).convert_alpha()
@@ -220,10 +223,10 @@ class Player(pygame.sprite.Sprite):
             
             if pygame.key.get_pressed()[K_a]:
                 if Self.rect.center[0] > 12:
-                    Self.rect.x -= 2
+                    Self.rect.x -= 3
             if pygame.key.get_pressed()[K_d]:
                 if Self.rect.x < largura_tela:
-                    Self.rect.x += 2
+                    Self.rect.x += 3
                 if Self.rect.topright[0] >= largura_tela + 128:
                     Self.rect.x = 0 - 128
 
@@ -264,7 +267,10 @@ class Monstros(pygame.sprite.Sprite):
         Self.image = Self.sprite[Self.index_lista]
         Self.rect = Self.image.get_rect()
         Self.mask = pygame.mask.from_surface(Self.image)
-        Self.rect.x = largura_tela + randrange(100, 800, 200)
+        if Self.tipo == "lobisomem":
+            Self.rect.x = largura_tela + randrange(100, 1100, 250)
+        elif Self.tipo == "medusa":
+            Self.rect.x = largura_tela + randrange(200, 1000, 100)
         Self.rect.y = altura_tela - 256
         Self.atacando = False
         Self.andando = True
@@ -284,7 +290,7 @@ class Monstros(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if Self.index_lista >= len(Self.sprite) - 1:
-                Self.rect.x = largura_tela + randrange(100, 800, 200)
+                Self.rect.x = largura_tela + randrange(100, 1000, 200)
                 Self.morrendo = False
                 Self.andando = True 
                 Self.index_lista = 0  
@@ -296,7 +302,7 @@ class Monstros(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if Self.rect.topright[0] < 0: 
-                Self.rect.x = largura_tela + randrange(100, 800, 200)
+                Self.rect.x = largura_tela + randrange(100, 1000, 200)
             Self.rect.x -= 2
         
 #funções para o jogo
@@ -319,10 +325,6 @@ def morreu():
     musica_gameOver = pygame.mixer.music.load(os.path.join(diretorio_musicas, "Once-Upon-a-Time.mp3"))
     musica_gameOver = pygame.mixer.music.play(-1)
 
-
-# relogio fps e game over
-relogio = pygame.time.Clock()
-gameOver = False
 
 # config. imagem de fundo do menu
 fundo_menu = pygame.image.load(os.path.join(diretorio_sprites, "fundo-menu.jpg")).convert()
@@ -365,7 +367,6 @@ for i in range(2):
     lobisomem = Monstros("lobisomem")
     todas_as_sprites.add(lobisomem)
     todos_inimigos.add(lobisomem)
-
 #Loop principal
 rodando = True
 while rodando:
@@ -397,15 +398,16 @@ while rodando:
                 jogador.atacar()
             if event.key == K_SPACE:
                 jogador.pular()
-
+            if event.key == K_p:
+                pause = True
+    
     if pygame.key.get_pressed()[K_a]:
         jogador.andar()
     if pygame.key.get_pressed()[K_d]:
         jogador.andar()
-    
 
+    todas_as_sprites.update()
     colisoes = pygame.sprite.spritecollide(jogador, todos_inimigos, False, pygame.sprite.collide_mask)
-    todas_as_sprites.draw(tela)
 
     if colisoes:
         if jogador.atacando == True:
@@ -416,7 +418,29 @@ while rodando:
             morreu()
             jogador.morreu()
             gameOver = True
-    
+
+    todas_as_sprites.draw(tela)
+    while pause:
+        #texto pause
+        fonte_pause = pygame.font.SysFont("pixeledregular", 25, True, False)
+        mensagem_pause = fonte_pause.render("PAUSE", False, (255, 0, 0))
+        tela.blit(mensagem_pause, (meio_largura_tela - mensagem_pause.get_width() // 2, altura_tela // 2 - 150))
+
+        #texto tirar pause
+        fonte_guia_pause = pygame.font.SysFont('pixeledregular', 25, True, False)
+        mensagem_voltar_pause = fonte_guia_pause.render("Aperte 'p' para voltar", False, (255, 0, 0))
+        tela.blit(mensagem_voltar_pause, (meio_largura_tela - mensagem_voltar_pause.get_width() // 2, altura_tela // 2))
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                rodando = False
+                pygame.quit()
+                exit()
+            if event.type == KEYDOWN:
+                if event.key == K_p:
+                    pause = False
+        
+        pygame.display.flip()    
+
     while gameOver:
         tela.fill((0, 0, 0))
         #mostrar personagem e chão
@@ -443,8 +467,5 @@ while rodando:
         
         pygame.display.flip()
 
-    todas_as_sprites.update()
     
-    
-
     pygame.display.flip()
