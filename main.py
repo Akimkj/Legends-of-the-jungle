@@ -284,7 +284,7 @@ class Monstros(pygame.sprite.Sprite):
         Self.rect = Self.image.get_rect()
         Self.mask = pygame.mask.from_surface(Self.image)
         if Self.tipo == "lobisomem":
-            Self.rect.x = largura_tela + randrange(100, 900, 150)
+            Self.rect.x = largura_tela + randrange(100, 900, 100)
         elif Self.tipo == "medusa":
             Self.rect.x = largura_tela + randrange(200, 1000, 300)
         Self.rect.y = altura_tela - 256
