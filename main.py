@@ -284,9 +284,9 @@ class Monstros(pygame.sprite.Sprite):
         Self.rect = Self.image.get_rect()
         Self.mask = pygame.mask.from_surface(Self.image)
         if Self.tipo == "lobisomem":
-            Self.rect.x = largura_tela + randrange(100, 1100, 250)
+            Self.rect.x = largura_tela + randrange(100, 900, 150)
         elif Self.tipo == "medusa":
-            Self.rect.x = largura_tela + randrange(200, 1000, 100)
+            Self.rect.x = largura_tela + randrange(200, 1000, 300)
         Self.rect.y = altura_tela - 256
         Self.atacando = False
         Self.andando = True
@@ -308,7 +308,7 @@ class Monstros(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if Self.index_lista >= len(Self.sprite) - 1:
-                Self.rect.x = largura_tela + randrange(100, 1000, 200)
+                Self.rect.x = largura_tela + randrange(100, 800, 200)
                 Self.morrendo = False
                 Self.andando = True 
                 Self.index_lista = 0  
@@ -320,7 +320,7 @@ class Monstros(pygame.sprite.Sprite):
             Self.image = Self.sprite[int(Self.index_lista)]
             Self.mask = pygame.mask.from_surface(Self.image)
             if Self.rect.topright[0] < 0: 
-                Self.rect.x = largura_tela + randrange(100, 1000, 200)
+                Self.rect.x = largura_tela + randrange(150, 900, 150)
             Self.rect.x -= 3.5
         
 #funções para o jogo
@@ -413,7 +413,7 @@ for i in range((largura_tela*2) // 128):
 jogador = Player(100)
 todas_as_sprites.add(jogador)
 todos_inimigos = pygame.sprite.Group()
-for i in range(2):
+for i in range(3):
     medusa = Monstros("medusa")
     todas_as_sprites.add(medusa)
     todos_inimigos.add(medusa)
