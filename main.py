@@ -166,8 +166,7 @@ class Player(pygame.sprite.Sprite):
         Self.index_lista = 14
 
     def update(Self):
-        tempo_atual = pygame.time.get_ticks()
-
+        tempo_atual = pygame.time.get_ticks()        
         if Self.cooldown_ataque and tempo_atual - Self.tempo_ultimo_ataque > Self.duracao_cooldown:
             Self.cooldown_ataque = False
 
