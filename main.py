@@ -508,7 +508,7 @@ while rodando:
                    gameOver = True
 
     # Verifica se o jogador venceu // tela de vitória
-    while pontos >= 20:
+    while pontos >= 15:
         tela_vitoria(tela)
         for event in pygame.event.get():
             if event.type == QUIT:
